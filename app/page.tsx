@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import type { Report, ReportFolder, ReportData, ChatMessage, SectionUpdate } from '@/lib/types'
+import type { TemplateId } from './components/templates/shared'
 import FolderTree from './components/FolderTree'
 import ReportView from './components/ReportView'
 import TickerInput from './components/TickerInput'
@@ -18,6 +19,7 @@ export default function Home() {
   const [sectionUpdates, setSectionUpdates] = useState<Map<string, unknown>>(new Map())
   const [viewingVersionId, setViewingVersionId] = useState<string | null>(null)
   const [viewingVersionData, setViewingVersionData] = useState<Partial<ReportData> | null>(null)
+  const [template, setTemplate] = useState<TemplateId>('newspaper')
 
   const loadData = useCallback(async () => {
     const [fRes, rRes] = await Promise.all([
@@ -163,6 +165,8 @@ export default function Home() {
               versions={versions}
               onSave={handleSave}
               viewingVersionId={viewingVersionId}
+              template={template}
+              onTemplateChange={setTemplate}
               onViewVersion={(versionId) => {
                 if (!versionId) {
                   setViewingVersionId(null)
@@ -195,6 +199,7 @@ export default function Home() {
                 data={viewingVersionData ?? activeReport.data as Partial<ReportData>}
                 sectionUpdates={viewingVersionId ? new Map() : sectionUpdates}
                 generating={generating}
+                template={template}
               />
             </div>
           </>
@@ -204,6 +209,7 @@ export default function Home() {
               data={{}}
               sectionUpdates={sectionUpdates}
               generating={generating}
+              template={template}
             />
           </div>
         ) : (

@@ -1,23 +1,38 @@
 'use client'
 
-import { useState } from 'react'
-import { Download, Save, RotateCcw, Eye } from 'lucide-react'
+import { Download, Save, RotateCcw, Eye, Layout } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
 import type { Report } from '@/lib/types'
+import { TEMPLATES, type TemplateId } from './templates/shared'
 
-export default function VersionBar({ report, versions, onSave, onRestore, onViewVersion, viewingVersionId }: {
+export default function VersionBar({ report, versions, onSave, onRestore, onViewVersion, viewingVersionId, template, onTemplateChange }: {
   report: Report
   versions: { id: string; version: number; data?: Record<string, unknown>; created_at: string }[]
   onSave: () => void
   onRestore: (versionId: string) => void
   onViewVersion: (versionId: string | null) => void
   viewingVersionId: string | null
+  template: TemplateId
+  onTemplateChange: (t: TemplateId) => void
 }) {
+  const [showTemplates, setShowTemplates] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) setShowTemplates(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
   const handlePdf = async () => {
     const el = document.getElementById('report-content')
     if (!el) return
     const { default: html2canvas } = await import('html2canvas-pro')
     const { default: jsPDF } = await import('jspdf')
-    const canvas = await html2canvas(el, { scale: 2, backgroundColor: '#0f172a' })
+    const bgColor = template === 'newspaper' ? '#faf8f3' : template === 'executive' ? '#ffffff' : '#1c1917'
+    const canvas = await html2canvas(el, { scale: 2, backgroundColor: bgColor })
     const imgData = canvas.toDataURL('image/png')
     const pdf = new jsPDF('p', 'mm', 'a4')
     const w = pdf.internal.pageSize.getWidth()
@@ -36,9 +51,7 @@ export default function VersionBar({ report, versions, onSave, onRestore, onView
               key={v.id}
               onClick={() => onViewVersion(viewingVersionId === v.id ? null : v.id)}
               className={`px-2 py-0.5 text-[10px] rounded ${
-                viewingVersionId === v.id
-                  ? 'bg-amber-600/20 text-amber-400'
-                  : 'bg-stone-800 text-stone-400 hover:text-white'
+                viewingVersionId === v.id ? 'bg-amber-600/20 text-amber-400' : 'bg-stone-800 text-stone-400 hover:text-white'
               }`}
             >
               v{v.version}
@@ -47,16 +60,14 @@ export default function VersionBar({ report, versions, onSave, onRestore, onView
           <button
             onClick={() => onViewVersion(null)}
             className={`px-2 py-0.5 text-[10px] rounded font-medium ${
-              !viewingVersionId
-                ? 'bg-blue-600/20 text-blue-400'
-                : 'bg-stone-800 text-stone-400 hover:text-white'
+              !viewingVersionId ? 'bg-blue-600/20 text-blue-400' : 'bg-stone-800 text-stone-400 hover:text-white'
             }`}
           >
             v{report.version} (live)
           </button>
           {viewingVersionId && (
             <button
-              onClick={() => { onRestore(viewingVersionId); }}
+              onClick={() => { onRestore(viewingVersionId) }}
               className="ml-2 flex items-center gap-1 px-2 py-0.5 text-[10px] rounded bg-amber-600/20 text-amber-400 hover:bg-amber-600/30"
             >
               <RotateCcw className="w-3 h-3" /> Restore
@@ -64,12 +75,39 @@ export default function VersionBar({ report, versions, onSave, onRestore, onView
           )}
         </div>
       </div>
-      <div className="flex gap-2">
+      <div className="flex gap-2 items-center">
         {viewingVersionId && (
           <span className="flex items-center gap-1 px-3 py-1.5 text-xs text-amber-400">
             <Eye className="w-3.5 h-3.5" /> Read-only
           </span>
         )}
+
+        {/* Template Selector */}
+        <div className="relative" ref={dropdownRef}>
+          <button
+            onClick={() => setShowTemplates(!showTemplates)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-stone-800 hover:bg-stone-700 rounded-md text-stone-300"
+          >
+            <Layout className="w-3.5 h-3.5" />
+            {TEMPLATES.find(t => t.id === template)?.label}
+          </button>
+          {showTemplates && (
+            <div className="absolute right-0 top-full mt-1 bg-stone-800 rounded-md py-1 shadow-xl border border-stone-600 z-50 min-w-[120px]">
+              {TEMPLATES.map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => { onTemplateChange(t.id); setShowTemplates(false) }}
+                  className={`w-full text-left px-3 py-1.5 text-xs hover:bg-stone-700 ${
+                    template === t.id ? 'text-blue-400' : 'text-stone-300'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
         <button
           onClick={onSave}
           disabled={!!viewingVersionId}

@@ -1,129 +1,119 @@
 'use client'
 
-import { OnePagerData } from '@/lib/types'
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from 'recharts'
+import ReportSection from '../ReportSection'
+import AnimatedNumber from '../AnimatedNumber'
+import { PriceChart, RevenueTrendChart } from '../ChartSection'
+import { useSections, type TemplateProps } from './shared'
 
-const CHART_COLORS = ['#6366f1', '#818cf8', '#a5b4fc', '#c7d2fe', '#e0e7ff']
-
-export default function ModernTemplate({ data }: { data: OnePagerData }) {
+function MetricCard({ label, children, accent }: { label: string; children: React.ReactNode; accent?: boolean }) {
   return (
-    <div className="w-full h-full bg-white p-8 flex flex-col font-sans text-gray-800" style={{ fontSize: '10px' }}>
-      {/* Header - dark top bar */}
-      <div className="bg-slate-900 rounded-xl p-5 mb-5">
-        <div className="flex justify-between items-start">
-          <div>
-            <p className="text-[9px] uppercase tracking-widest text-indigo-400 mb-1">{data.subtitle}</p>
-            <h1 className="text-[20px] leading-tight text-white font-semibold">
-              {data.headline}{' '}
-              <span className="text-indigo-400 text-[30px] font-bold">{data.highlightNumber}</span>
-            </h1>
-          </div>
-          <div className="bg-indigo-600 rounded-lg px-3 py-2 text-center">
-            <span className="text-white text-[10px] font-bold tracking-wider">{data.companyName}</span>
-          </div>
-        </div>
-      </div>
+    <div className={`rounded-lg p-3 ${accent ? 'bg-blue-500/10' : 'bg-stone-800'}`}>
+      <p className="text-[10px] text-stone-500 uppercase tracking-wider mb-1">{label}</p>
+      <p className="text-lg font-bold text-white font-mono">{children}</p>
+    </div>
+  )
+}
 
-      {/* Metrics bar */}
-      <div className="grid grid-cols-4 gap-3 mb-5">
-        {data.metrics.map((m, i) => (
-          <div key={i} className="bg-slate-50 rounded-lg p-3 text-center">
-            <div className="text-[22px] font-bold text-indigo-600">
-              {m.value}<span className="text-[13px]">{m.suffix}</span>
-            </div>
-            <div className="text-[8px] text-slate-500 uppercase tracking-wide mt-0.5">{m.label}</div>
-          </div>
-        ))}
-      </div>
+function VerdictPill({ result }: { result: string }) {
+  const cfg: Record<string, { label: string; cls: string }> = {
+    pass_tier1: { label: 'Strong Buy', cls: 'bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/30' },
+    pass_tier2: { label: 'Buy', cls: 'bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/30' },
+    watch: { label: 'Hold', cls: 'bg-amber-500/20 text-amber-400 ring-1 ring-amber-500/30' },
+    fail: { label: 'Avoid', cls: 'bg-red-500/20 text-red-400 ring-1 ring-red-500/30' },
+  }
+  const c = cfg[result] ?? cfg.watch
+  return <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${c.cls}`}>{c.label}</span>
+}
 
-      {/* Two column */}
-      <div className="flex gap-6 flex-1 min-h-0">
-        {/* Left */}
-        <div className="flex-1 flex flex-col gap-3.5">
-          <p className="text-[10px] leading-relaxed text-slate-600">{data.introText}</p>
+export default function ModernTemplate({ data, sectionUpdates }: TemplateProps) {
+  const { header, valuation, growth, charts, thesis, verdict } = useSections(data, sectionUpdates)
 
-          <div>
-            <h2 className="text-[12px] font-bold text-slate-900 mb-1.5 flex items-center gap-1.5">
-              <span className="w-1 h-4 bg-indigo-500 rounded-full" />
-              {data.objectivesTitle}
-            </h2>
-            <ul className="space-y-1.5 ml-3">
-              {data.objectives.map((obj, i) => (
-                <li key={i} className="flex items-start gap-2">
-                  <span className="w-4 h-4 rounded bg-indigo-100 text-indigo-600 text-[8px] flex items-center justify-center shrink-0 font-bold">{i + 1}</span>
-                  <span className="text-[9.5px] leading-snug text-slate-600">{obj.text}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div>
-            <h2 className="text-[12px] font-bold text-slate-900 mb-1.5 flex items-center gap-1.5">
-              <span className="w-1 h-4 bg-indigo-500 rounded-full" />
-              {data.solutionTitle}
-            </h2>
-            <p className="text-[9.5px] leading-relaxed text-slate-600 ml-3">{data.solutionText}</p>
-          </div>
-
-          <div>
-            <h2 className="text-[12px] font-bold text-slate-900 mb-1.5 flex items-center gap-1.5">
-              <span className="w-1 h-4 bg-indigo-500 rounded-full" />
-              {data.resultsTitle}
-            </h2>
-            <ul className="space-y-1.5 ml-3">
-              {data.results.map((r, i) => (
-                <li key={i} className="flex items-start gap-2">
-                  <span className="text-indigo-500 text-[10px]">&#x25B6;</span>
-                  <span className="text-[9.5px] leading-snug text-slate-600">{r.text}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-
-        {/* Right */}
-        <div className="w-[42%] flex flex-col gap-3.5">
-          <div className="bg-slate-50 rounded-lg p-3">
-            <h3 className="text-[11px] font-semibold text-slate-800 mb-2">{data.chartTitle}</h3>
-            <div className="h-[90px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data.chartData} layout="vertical" margin={{ top: 0, right: 5, bottom: 0, left: 30 }}>
-                  <XAxis type="number" hide />
-                  <YAxis dataKey="name" type="category" tick={{ fontSize: 8 }} width={35} />
-                  <Bar dataKey="value" radius={[0, 6, 6, 0]} barSize={12}>
-                    {data.chartData.map((_, i) => (
-                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+  return (
+    <div className="max-w-4xl mx-auto bg-stone-900 text-white rounded-2xl overflow-hidden" id="report-content">
+      <ReportSection title="" filled={!!header}>
+        {header && (
+          <div className="p-8 bg-gradient-to-br from-stone-800 to-stone-900">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs text-stone-500 uppercase tracking-widest mb-1">{header.exchange} &middot; {header.sector}</p>
+                <h1 className="text-4xl font-extrabold tracking-tight">{header.companyName}</h1>
+                <p className="text-stone-500 text-sm mt-1">{header.ticker}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-3xl font-bold font-mono">${header.currentPrice?.toLocaleString()}</p>
+                <p className={`text-sm font-semibold mt-1 ${header.gapFromHigh < 0 ? 'text-red-400' : 'text-emerald-400'}`}>
+                  {header.gapFromHigh >= 0 ? '+' : ''}{header.gapFromHigh?.toFixed(1)}% from 52W High
+                </p>
+                <p className="text-xs text-stone-500 mt-0.5">MCap {header.marketCap}</p>
+              </div>
             </div>
           </div>
+        )}
+      </ReportSection>
 
-          <div className="bg-slate-50 rounded-lg p-3">
-            <h3 className="text-[11px] font-semibold text-slate-800 mb-2">{data.chart2Title}</h3>
-            <div className="h-[90px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data.chart2Data} margin={{ top: 5, right: 5, bottom: 0, left: -10 }}>
-                  <XAxis dataKey="name" tick={{ fontSize: 7 }} />
-                  <YAxis tick={{ fontSize: 7 }} />
-                  <Bar dataKey="value" fill="#6366f1" radius={[6, 6, 0, 0]} barSize={20} />
-                </BarChart>
-              </ResponsiveContainer>
+      <div className="p-8 space-y-6">
+        <ReportSection title="" filled={!!valuation && !!growth}>
+          {valuation && growth && (
+            <div className="grid grid-cols-4 gap-3">
+              <MetricCard label="P/E"><AnimatedNumber value={valuation.pe} suffix="x" /></MetricCard>
+              <MetricCard label="P/S"><AnimatedNumber value={valuation.ps} suffix="x" /></MetricCard>
+              <MetricCard label="EV/EBITDA"><AnimatedNumber value={valuation.evEbitda} suffix="x" /></MetricCard>
+              <MetricCard label="PEG"><AnimatedNumber value={valuation.peg} suffix="x" /></MetricCard>
+              <MetricCard label="Rev Growth" accent>
+                <span className={(growth.revenueGrowthYoy ?? 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}>
+                  <AnimatedNumber value={growth.revenueGrowthYoy ? growth.revenueGrowthYoy * 100 : null} suffix="%" />
+                </span>
+              </MetricCard>
+              <MetricCard label="Gross Margin"><AnimatedNumber value={growth.grossMargin ? growth.grossMargin * 100 : null} suffix="%" /></MetricCard>
+              <MetricCard label="Op Margin"><AnimatedNumber value={growth.operatingMargin ? growth.operatingMargin * 100 : null} suffix="%" /></MetricCard>
+              <MetricCard label="FCF Margin"><AnimatedNumber value={growth.fcfMargin ? growth.fcfMargin * 100 : null} suffix="%" /></MetricCard>
             </div>
-          </div>
+          )}
+        </ReportSection>
 
-          <div className="bg-indigo-50 rounded-lg p-3">
-            <h2 className="text-[12px] font-bold text-indigo-900 mb-1.5">{data.conclusionTitle}</h2>
-            <p className="text-[9.5px] leading-relaxed text-indigo-800">{data.conclusionText}</p>
-          </div>
-        </div>
-      </div>
+        <ReportSection title="" filled={!!charts}>
+          {charts && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-stone-800 rounded-lg p-4">
+                <h3 className="text-xs text-stone-400 uppercase tracking-wider mb-3">Price History</h3>
+                <PriceChart data={charts.priceHistory} />
+              </div>
+              <div className="bg-stone-800 rounded-lg p-4">
+                <h3 className="text-xs text-stone-400 uppercase tracking-wider mb-3">Revenue Trend</h3>
+                <RevenueTrendChart data={charts.revenueTrend} />
+              </div>
+            </div>
+          )}
+        </ReportSection>
 
-      {/* Footer */}
-      <div className="mt-4 pt-3 border-t border-slate-200 flex justify-between items-center">
-        <p className="text-[7px] text-slate-400">{data.companyName} &copy; 2024 — Confidential</p>
-        <p className="text-[7px] text-slate-400">Generated with One-Pager Generator</p>
+        <ReportSection title="" filled={!!verdict}>
+          {verdict && (
+            <div className="bg-stone-800 rounded-lg p-5 flex items-center gap-4">
+              <VerdictPill result={verdict.result} />
+              <p className="text-sm text-stone-300 flex-1">{verdict.reason}</p>
+            </div>
+          )}
+        </ReportSection>
+
+        <ReportSection title="" filled={!!thesis}>
+          {thesis && (
+            <div className="space-y-4">
+              <p className="text-sm text-stone-300 leading-relaxed">{thesis.summary}</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-emerald-500/5 rounded-lg p-4">
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-emerald-400 mb-3">Bull Case</h4>
+                  <ul className="space-y-2">{thesis.bullPoints.map((p, i) => (<li key={i} className="text-sm text-stone-300 flex gap-2"><span className="text-emerald-500 font-bold shrink-0">{i + 1}</span>{p}</li>))}</ul>
+                </div>
+                <div className="bg-red-500/5 rounded-lg p-4">
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-red-400 mb-3">Bear Case</h4>
+                  <ul className="space-y-2">{thesis.bearPoints.map((p, i) => (<li key={i} className="text-sm text-stone-300 flex gap-2"><span className="text-red-500 font-bold shrink-0">{i + 1}</span>{p}</li>))}</ul>
+                </div>
+              </div>
+            </div>
+          )}
+        </ReportSection>
+
+        <p className="text-center text-[10px] text-stone-600 pt-4">For informational purposes only. Not financial advice.</p>
       </div>
     </div>
   )
