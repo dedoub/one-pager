@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Report Generation Workflow</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; padding: 40px; }
+  h1 { text-align: center; font-size: 28px; margin-bottom: 8px; color: #f8fafc; }
+  .subtitle { text-align: center; font-size: 14px; color: #94a3b8; margin-bottom: 40px; }
+
+  .options { display: flex; gap: 40px; justify-content: center; flex-wrap: wrap; }
+  .option { flex: 0 0 520px; background: #1e293b; border-radius: 16px; overflow: hidden; }
+  .option-header { padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; }
+  .option-label { background: #3b82f6; color: white; font-weight: 700; font-size: 13px; padding: 4px 12px; border-radius: 20px; }
+  .option-title { font-size: 15px; font-weight: 600; color: #cbd5e1; }
+
+  /* App mockup */
+  .app-mock { padding: 16px; }
+  .app { background: #f8fafc; border-radius: 8px; overflow: hidden; color: #1e293b; display: flex; height: 380px; }
+
+  /* Sidebar */
+  .sidebar { width: 48px; background: #1e293b; display: flex; flex-direction: column; align-items: center; padding-top: 12px; gap: 12px; flex-shrink: 0; }
+  .sidebar .icon { width: 28px; height: 28px; background: #334155; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #94a3b8; }
+  .sidebar .icon.active { background: #3b82f6; color: white; }
+
+  /* Folder tree */
+  .folder-tree { width: 160px; background: #f1f5f9; padding: 10px; border-right: 1px solid #e2e8f0; flex-shrink: 0; overflow: hidden; }
+  .folder-tree .tree-title { font-size: 9px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 8px; }
+  .tree-item { font-size: 10px; padding: 3px 4px; border-radius: 3px; cursor: pointer; display: flex; align-items: center; gap: 4px; color: #475569; }
+  .tree-item.active { background: #dbeafe; color: #1d4ed8; }
+  .tree-item .arrow { font-size: 8px; color: #94a3b8; }
+  .tree-indent { padding-left: 14px; }
+
+  /* Main report area */
+  .report-area { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+  .report-toolbar { background: white; border-bottom: 1px solid #e2e8f0; padding: 6px 10px; display: flex; justify-content: space-between; align-items: center; }
+  .report-toolbar .title { font-size: 11px; font-weight: 600; }
+  .toolbar-btns { display: flex; gap: 4px; }
+  .toolbar-btn { font-size: 8px; padding: 3px 8px; background: #f1f5f9; border-radius: 4px; color: #64748b; }
+  .toolbar-btn.primary { background: #2563eb; color: white; }
+  .report-scroll { flex: 1; overflow: hidden; padding: 8px; background: #e2e8f0; }
+
+  /* Mini report preview */
+  .mini-report { background: white; border-radius: 4px; height: 100%; padding: 8px; overflow: hidden; }
+  .mr-header { background: linear-gradient(135deg, #1e3a5f, #2563eb); color: white; padding: 8px; border-radius: 3px; margin-bottom: 6px; }
+  .mr-header h3 { font-size: 10px; font-weight: 700; }
+  .mr-header .sub { font-size: 7px; opacity: 0.7; }
+  .mr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+  .mr-cell { background: #f8fafc; padding: 6px; border-radius: 3px; }
+  .mr-cell-title { font-size: 7px; font-weight: 700; color: #2563eb; text-transform: uppercase; margin-bottom: 3px; }
+  .mr-metric { display: flex; justify-content: space-between; font-size: 7px; }
+  .mr-chart { background: #f1f5f9; height: 30px; border-radius: 2px; }
+
+  /* Chat panel */
+  .chat-panel { width: 200px; border-left: 1px solid #e2e8f0; display: flex; flex-direction: column; flex-shrink: 0; background: white; }
+  .chat-header { padding: 8px 10px; border-bottom: 1px solid #e2e8f0; font-size: 10px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+  .chat-messages { flex: 1; padding: 8px; overflow: hidden; display: flex; flex-direction: column; gap: 6px; }
+  .chat-msg { font-size: 8px; line-height: 1.4; padding: 6px 8px; border-radius: 8px; max-width: 90%; }
+  .chat-msg.user { background: #2563eb; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+  .chat-msg.ai { background: #f1f5f9; color: #334155; align-self: flex-start; border-bottom-left-radius: 2px; }
+  .chat-input-area { padding: 8px; border-top: 1px solid #e2e8f0; }
+  .chat-input { width: 100%; background: #f1f5f9; border: none; border-radius: 6px; padding: 6px 8px; font-size: 8px; color: #64748b; }
+
+  /* Option A specific - split pane */
+  .app-a .report-area { border-right: none; }
+
+  /* Option B specific - overlay chat */
+  .app-b .chat-panel { position: absolute; right: 0; top: 0; bottom: 0; width: 220px; background: white; box-shadow: -4px 0 20px rgba(0,0,0,0.1); }
+  .app-b { position: relative; }
+  .app-b .report-area { flex: 1; }
+  .chat-toggle { position: absolute; right: 8px; bottom: 8px; background: #2563eb; color: white; font-size: 10px; padding: 6px 12px; border-radius: 20px; display: flex; align-items: center; gap: 4px; box-shadow: 0 2px 8px rgba(37,99,235,0.4); }
+
+  .desc { padding: 16px 20px; font-size: 12px; color: #94a3b8; line-height: 1.6; }
+  .desc strong { color: #e2e8f0; }
+  .highlight { color: #60a5fa; }
+</style>
+</head>
+<body>
+  <h1>Chat + Report Workflow</h1>
+  <p class="subtitle">채팅 패널과 리포트 영역의 배치 방식을 선택해주세요</p>
+
+  <div class="options">
+    <!-- Option A: Fixed Split -->
+    <div class="option">
+      <div class="option-header">
+        <span class="option-label">A</span>
+        <span class="option-title">Fixed Split (3-Column)</span>
+      </div>
+      <div class="app-mock">
+        <div class="app app-a">
+          <div class="sidebar">
+            <div class="icon active">R</div>
+            <div class="icon">F</div>
+            <div class="icon">S</div>
+          </div>
+          <div class="folder-tree">
+            <div class="tree-title">Reports</div>
+            <div class="tree-item"><span class="arrow">&#9660;</span> Stock Research</div>
+            <div class="tree-indent">
+              <div class="tree-item active">CRWD Analysis</div>
+              <div class="tree-item">PLTR Deep Dive</div>
+              <div class="tree-item">SNOW Review</div>
+            </div>
+            <div class="tree-item"><span class="arrow">&#9654;</span> Sector Reports</div>
+            <div class="tree-item"><span class="arrow">&#9654;</span> Weekly Summary</div>
+          </div>
+          <div class="report-area">
+            <div class="report-toolbar">
+              <span class="title">CRWD Analysis - v3</span>
+              <div class="toolbar-btns">
+                <span class="toolbar-btn">v1</span>
+                <span class="toolbar-btn">v2</span>
+                <span class="toolbar-btn primary">v3</span>
+                <span class="toolbar-btn">PDF</span>
+              </div>
+            </div>
+            <div class="report-scroll">
+              <div class="mini-report">
+                <div class="mr-header">
+                  <h3>CrowdStrike Holdings (CRWD)</h3>
+                  <div class="sub">NASDAQ &bull; $342.15 &bull; Cybersecurity</div>
+                </div>
+                <div class="mr-grid">
+                  <div class="mr-cell">
+                    <div class="mr-cell-title">Valuation</div>
+                    <div class="mr-metric"><span>P/E</span><span>68.2x</span></div>
+                    <div class="mr-metric"><span>P/S</span><span>22.4x</span></div>
+                  </div>
+                  <div class="mr-cell">
+                    <div class="mr-cell-title">Growth</div>
+                    <div class="mr-metric"><span>Rev</span><span style="color:#16a34a">+33%</span></div>
+                    <div class="mr-metric"><span>FCF</span><span>32%</span></div>
+                  </div>
+                  <div class="mr-cell"><div class="mr-cell-title">Price 12M</div><div class="mr-chart"></div></div>
+                  <div class="mr-cell"><div class="mr-cell-title">Revenue</div><div class="mr-chart"></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="chat-panel">
+            <div class="chat-header">
+              <span>Claude Chat</span>
+              <span style="font-size:8px; color:#94a3b8">CRWD</span>
+            </div>
+            <div class="chat-messages">
+              <div class="chat-msg ai">CRWD 리포트를 생성했습니다. 현재 Tier 1 통과 종목입니다.</div>
+              <div class="chat-msg user">밸류에이션 부분을 좀 더 보수적으로 분석해줘</div>
+              <div class="chat-msg ai">밸류에이션 섹션을 업데이트했습니다. PEG 기준 과대평가 의견을 추가했습니다.</div>
+              <div class="chat-msg user">좋아, 이 버전으로 저장하고 PDF로 뽑아줘</div>
+            </div>
+            <div class="chat-input-area">
+              <div class="chat-input">메시지를 입력하세요...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="desc">
+        <strong>폴더트리 | 리포트 | 채팅</strong>이 항상 나란히 보이는 고정 3컬럼. 리포트를 보면서 바로 피드백 가능. 버전 탭으로 히스토리 관리. <span class="highlight">리포트와 대화를 동시에 볼 수 있어 피드백 루프가 빠름.</span>
+      </div>
+    </div>
+
+    <!-- Option B: Overlay Chat -->
+    <div class="option">
+      <div class="option-header">
+        <span class="option-label">B</span>
+        <span class="option-title">Overlay Chat (Full Report + Floating)</span>
+      </div>
+      <div class="app-mock">
+        <div class="app app-b">
+          <div class="sidebar">
+            <div class="icon active">R</div>
+            <div class="icon">F</div>
+            <div class="icon">S</div>
+          </div>
+          <div class="folder-tree">
+            <div class="tree-title">Reports</div>
+            <div class="tree-item"><span class="arrow">&#9660;</span> Stock Research</div>
+            <div class="tree-indent">
+              <div class="tree-item active">CRWD Analysis</div>
+              <div class="tree-item">PLTR Deep Dive</div>
+              <div class="tree-item">SNOW Review</div>
+            </div>
+            <div class="tree-item"><span class="arrow">&#9654;</span> Sector Reports</div>
+          </div>
+          <div class="report-area">
+            <div class="report-toolbar">
+              <span class="title">CRWD Analysis - v3</span>
+              <div class="toolbar-btns">
+                <span class="toolbar-btn">v1</span>
+                <span class="toolbar-btn">v2</span>
+                <span class="toolbar-btn primary">v3</span>
+                <span class="toolbar-btn">PDF</span>
+              </div>
+            </div>
+            <div class="report-scroll">
+              <div class="mini-report">
+                <div class="mr-header">
+                  <h3>CrowdStrike Holdings (CRWD)</h3>
+                  <div class="sub">NASDAQ &bull; $342.15 &bull; Cybersecurity</div>
+                </div>
+                <div class="mr-grid">
+                  <div class="mr-cell">
+                    <div class="mr-cell-title">Valuation</div>
+                    <div class="mr-metric"><span>P/E</span><span>68.2x</span></div>
+                    <div class="mr-metric"><span>P/S</span><span>22.4x</span></div>
+                    <div class="mr-metric"><span>EV/EBITDA</span><span>54.1x</span></div>
+                  </div>
+                  <div class="mr-cell">
+                    <div class="mr-cell-title">Growth</div>
+                    <div class="mr-metric"><span>Rev Growth</span><span style="color:#16a34a">+33%</span></div>
+                    <div class="mr-metric"><span>Gross Margin</span><span>75%</span></div>
+                    <div class="mr-metric"><span>FCF Margin</span><span>32%</span></div>
+                  </div>
+                  <div class="mr-cell"><div class="mr-cell-title">Price 12M</div><div class="mr-chart"></div></div>
+                  <div class="mr-cell"><div class="mr-cell-title">Revenue Trend</div><div class="mr-chart"></div></div>
+                </div>
+              </div>
+            </div>
+            <div class="chat-toggle">💬 Chat with Claude</div>
+          </div>
+          <div class="chat-panel">
+            <div class="chat-header">
+              <span>Claude Chat</span>
+              <span style="font-size:8px; color:#94a3b8">&#x2715;</span>
+            </div>
+            <div class="chat-messages">
+              <div class="chat-msg ai">CRWD 리포트를 생성했습니다.</div>
+              <div class="chat-msg user">밸류에이션 보수적으로</div>
+              <div class="chat-msg ai">업데이트 완료. v3으로 저장했습니다.</div>
+            </div>
+            <div class="chat-input-area">
+              <div class="chat-input">메시지를 입력하세요...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="desc">
+        <strong>리포트를 최대한 넓게</strong> 보여주고, 채팅은 플로팅 패널로 열고 닫을 수 있음. 리포트 검토 시에는 전체 화면으로 집중, 피드백 줄 때만 채팅 오픈. <span class="highlight">리포트 가독성이 좋지만 동시 비교가 어려움.</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

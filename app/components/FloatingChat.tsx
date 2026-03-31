@@ -55,21 +55,21 @@ export default function FloatingChat({ chats, onSend, reportTicker }: {
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-6 right-6 z-50 w-80 h-[480px] bg-slate-900 border border-slate-700 rounded-xl shadow-2xl flex flex-col overflow-hidden"
+            className="fixed bottom-6 right-6 z-50 w-80 h-[480px] bg-stone-900 border border-stone-700 rounded-xl shadow-2xl flex flex-col overflow-hidden"
           >
-            <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-700 bg-slate-800">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-stone-700 bg-stone-800">
               <div>
                 <span className="text-sm font-semibold text-white">Chat</span>
-                <span className="text-xs text-slate-400 ml-2">{reportTicker}</span>
+                <span className="text-xs text-stone-400 ml-2">{reportTicker}</span>
               </div>
-              <button onClick={() => setOpen(false)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setOpen(false)} className="text-stone-400 hover:text-white">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-3 space-y-2">
               {chats.length === 0 && (
-                <p className="text-xs text-slate-500 text-center mt-8">
+                <p className="text-xs text-stone-500 text-center mt-8">
                   Ask to refine the report...
                 </p>
               )}
@@ -78,7 +78,7 @@ export default function FloatingChat({ chats, onSend, reportTicker }: {
                   <div className={`max-w-[85%] px-3 py-2 rounded-lg text-xs leading-relaxed ${
                     msg.role === 'user'
                       ? 'bg-blue-600 text-white rounded-br-sm'
-                      : 'bg-slate-800 text-slate-300 rounded-bl-sm'
+                      : 'bg-stone-800 text-stone-300 rounded-bl-sm'
                   }`}>
                     {msg.content}
                   </div>
@@ -87,7 +87,7 @@ export default function FloatingChat({ chats, onSend, reportTicker }: {
               <div ref={messagesEndRef} />
             </div>
 
-            <div className="p-3 border-t border-slate-700">
+            <div className="p-3 border-t border-stone-700">
               <div className="flex gap-2">
                 <input
                   value={input}
@@ -95,7 +95,7 @@ export default function FloatingChat({ chats, onSend, reportTicker }: {
                   onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
                   placeholder="Message..."
                   disabled={sending}
-                  className="flex-1 px-3 py-2 text-xs bg-slate-800 rounded-lg text-white placeholder-slate-500 outline-none focus:ring-1 focus:ring-blue-500"
+                  className="flex-1 px-3 py-2 text-xs bg-stone-800 rounded-lg text-white placeholder-stone-500 outline-none focus:ring-1 focus:ring-blue-500"
                 />
                 <button
                   onClick={handleSend}

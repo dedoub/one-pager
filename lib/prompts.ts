@@ -43,8 +43,12 @@ ${chatHistory.map(m => `${m.role}: ${m.content}`).join('\n')}
 
 USER REQUEST: ${userMessage}
 
-Modify the report based on the user's request. Return ONLY the sections that changed as JSON:
+Modify the report based on the user's request. Return JSON with:
+1. "message": A natural conversational reply to the user explaining what you changed and why (2-3 sentences, in the same language as the user's message)
+2. "sections": Only the sections that changed
+
 {
+  "message": "설명 메시지...",
   "sections": {
     "sectionKey": { ...updated section data... }
   }

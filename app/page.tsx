@@ -13,9 +13,11 @@ export default function Home() {
   const [reports, setReports] = useState<Report[]>([])
   const [activeReport, setActiveReport] = useState<Report | null>(null)
   const [chats, setChats] = useState<ChatMessage[]>([])
-  const [versions, setVersions] = useState<{ id: string; version: number; created_at: string }[]>([])
+  const [versions, setVersions] = useState<{ id: string; version: number; data: Record<string, unknown>; created_at: string }[]>([])
   const [generating, setGenerating] = useState(false)
   const [sectionUpdates, setSectionUpdates] = useState<Map<string, unknown>>(new Map())
+  const [viewingVersionId, setViewingVersionId] = useState<string | null>(null)
+  const [viewingVersionData, setViewingVersionData] = useState<Partial<ReportData> | null>(null)
 
   const loadData = useCallback(async () => {
     const [fRes, rRes] = await Promise.all([
@@ -123,7 +125,7 @@ export default function Home() {
       id: crypto.randomUUID(),
       report_id: activeReport.id,
       role: 'assistant',
-      content: `Updated sections: ${Object.keys(data.sections ?? {}).join(', ')}`,
+      content: data.message ?? `Updated sections: ${Object.keys(data.sections ?? {}).join(', ')}`,
       created_at: new Date().toISOString(),
     }])
   }, [activeReport])
@@ -137,10 +139,10 @@ export default function Home() {
   }, [activeReport, loadReport])
 
   return (
-    <div className="flex h-screen bg-slate-950 text-white">
+    <div className="flex h-screen bg-stone-900 text-white">
       {/* Sidebar */}
-      <div className="w-56 border-r border-slate-800 flex flex-col">
-        <div className="p-3 border-b border-slate-800">
+      <div className="w-56 border-r border-stone-700 flex flex-col bg-stone-900">
+        <div className="h-[41px] flex items-center px-3 border-b border-stone-700">
           <TickerInput onGenerate={handleGenerate} generating={generating} />
         </div>
         <FolderTree
@@ -160,6 +162,19 @@ export default function Home() {
               report={activeReport}
               versions={versions}
               onSave={handleSave}
+              viewingVersionId={viewingVersionId}
+              onViewVersion={(versionId) => {
+                if (!versionId) {
+                  setViewingVersionId(null)
+                  setViewingVersionData(null)
+                  return
+                }
+                setViewingVersionId(versionId)
+                const ver = versions.find(v => v.id === versionId)
+                if (ver?.data) {
+                  setViewingVersionData(ver.data as Partial<ReportData>)
+                }
+              }}
               onRestore={async (versionId) => {
                 await fetch(`/api/reports/${activeReport.id}/restore`, {
                   method: 'POST',
@@ -171,18 +186,20 @@ export default function Home() {
                 setActiveReport(updated)
                 setVersions(updated.versions ?? [])
                 setSectionUpdates(new Map(Object.entries(updated.data ?? {})))
+                setViewingVersionId(null)
+                setViewingVersionData(null)
               }}
             />
-            <div className="flex-1 overflow-y-auto p-6 bg-slate-900">
+            <div className="flex-1 overflow-y-auto p-6 bg-stone-800">
               <ReportView
-                data={activeReport.data as Partial<ReportData>}
-                sectionUpdates={sectionUpdates}
+                data={viewingVersionData ?? activeReport.data as Partial<ReportData>}
+                sectionUpdates={viewingVersionId ? new Map() : sectionUpdates}
                 generating={generating}
               />
             </div>
           </>
         ) : generating ? (
-          <div className="flex-1 overflow-y-auto p-6 bg-slate-900">
+          <div className="flex-1 overflow-y-auto p-6 bg-stone-800">
             <ReportView
               data={{}}
               sectionUpdates={sectionUpdates}
@@ -190,7 +207,7 @@ export default function Home() {
             />
           </div>
         ) : (
-          <div className="flex-1 flex items-center justify-center bg-slate-900">
+          <div className="flex-1 flex items-center justify-center bg-stone-800">
             <div className="text-center text-slate-500">
               <p className="text-lg font-medium">Enter a ticker to generate a report</p>
               <p className="text-sm mt-1">or select an existing report from the sidebar</p>

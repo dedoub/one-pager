@@ -10,10 +10,7 @@ export default function ReportSection({ title, filled, children, className = '' 
   className?: string
 }) {
   return (
-    <div className={`rounded-lg overflow-hidden ${className}`}>
-      <div className="text-[10px] font-bold uppercase tracking-wider text-blue-400 mb-2">
-        {title}
-      </div>
+    <div className={className}>
       <AnimatePresence mode="wait">
         {filled ? (
           <motion.div
@@ -30,9 +27,9 @@ export default function ReportSection({ title, filled, children, className = '' 
             key="placeholder"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="py-6 text-center text-xs text-slate-600 bg-slate-800/30 rounded border border-dashed border-slate-700"
+            className="py-4 text-center text-[10px] text-stone-400 italic font-serif"
           >
-            Waiting for data...
+            Awaiting data...
           </motion.div>
         )}
       </AnimatePresence>

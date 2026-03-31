@@ -1,17 +1,17 @@
 'use client'
 
 import { useState } from 'react'
-import { Download, Save, RotateCcw } from 'lucide-react'
+import { Download, Save, RotateCcw, Eye } from 'lucide-react'
 import type { Report } from '@/lib/types'
 
-export default function VersionBar({ report, versions, onSave, onRestore }: {
+export default function VersionBar({ report, versions, onSave, onRestore, onViewVersion, viewingVersionId }: {
   report: Report
-  versions: { id: string; version: number; created_at: string }[]
+  versions: { id: string; version: number; data?: Record<string, unknown>; created_at: string }[]
   onSave: () => void
   onRestore: (versionId: string) => void
+  onViewVersion: (versionId: string | null) => void
+  viewingVersionId: string | null
 }) {
-  const [viewingVersion, setViewingVersion] = useState<string | null>(null)
-
   const handlePdf = async () => {
     const el = document.getElementById('report-content')
     if (!el) return
@@ -27,29 +27,36 @@ export default function VersionBar({ report, versions, onSave, onRestore }: {
   }
 
   return (
-    <div className="flex items-center justify-between px-4 py-2 border-b border-slate-800 bg-slate-950">
+    <div className="flex items-center justify-between px-4 h-[41px] border-b border-stone-700 bg-stone-900">
       <div className="flex items-center gap-3">
         <h2 className="text-sm font-semibold text-white">{report.title}</h2>
         <div className="flex items-center gap-1">
           {versions.map(v => (
             <button
               key={v.id}
-              onClick={() => setViewingVersion(viewingVersion === v.id ? null : v.id)}
+              onClick={() => onViewVersion(viewingVersionId === v.id ? null : v.id)}
               className={`px-2 py-0.5 text-[10px] rounded ${
-                viewingVersion === v.id
+                viewingVersionId === v.id
                   ? 'bg-amber-600/20 text-amber-400'
-                  : 'bg-slate-800 text-slate-400 hover:text-white'
+                  : 'bg-stone-800 text-stone-400 hover:text-white'
               }`}
             >
               v{v.version}
             </button>
           ))}
-          <span className="px-2 py-0.5 text-[10px] rounded bg-blue-600/20 text-blue-400 font-medium">
+          <button
+            onClick={() => onViewVersion(null)}
+            className={`px-2 py-0.5 text-[10px] rounded font-medium ${
+              !viewingVersionId
+                ? 'bg-blue-600/20 text-blue-400'
+                : 'bg-stone-800 text-stone-400 hover:text-white'
+            }`}
+          >
             v{report.version} (live)
-          </span>
-          {viewingVersion && (
+          </button>
+          {viewingVersionId && (
             <button
-              onClick={() => { onRestore(viewingVersion); setViewingVersion(null) }}
+              onClick={() => { onRestore(viewingVersionId); }}
               className="ml-2 flex items-center gap-1 px-2 py-0.5 text-[10px] rounded bg-amber-600/20 text-amber-400 hover:bg-amber-600/30"
             >
               <RotateCcw className="w-3 h-3" /> Restore
@@ -58,9 +65,15 @@ export default function VersionBar({ report, versions, onSave, onRestore }: {
         </div>
       </div>
       <div className="flex gap-2">
+        {viewingVersionId && (
+          <span className="flex items-center gap-1 px-3 py-1.5 text-xs text-amber-400">
+            <Eye className="w-3.5 h-3.5" /> Read-only
+          </span>
+        )}
         <button
           onClick={onSave}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 rounded-md text-slate-300"
+          disabled={!!viewingVersionId}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-stone-800 hover:bg-slate-700 rounded-md text-stone-300 disabled:opacity-40"
         >
           <Save className="w-3.5 h-3.5" /> Save
         </button>

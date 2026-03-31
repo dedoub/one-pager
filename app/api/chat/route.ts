@@ -26,23 +26,23 @@ export async function POST(req: NextRequest) {
 
   await sb.from('report_chats').insert({ report_id: reportId, role: 'user', content: message })
 
-  const modifiedSections = await refineReport(report.data, chatHistory, message)
+  const result = await refineReport(report.data, chatHistory, message)
 
   const updatedData = { ...report.data }
-  for (const [key, value] of Object.entries(modifiedSections)) {
+  for (const [key, value] of Object.entries(result.sections)) {
     if (key in updatedData || ['header', 'valuation', 'growth', 'charts', 'thesis', 'verdict'].includes(key)) {
       (updatedData as Record<string, unknown>)[key] = value
     }
   }
 
-  const assistantMsg = `Updated sections: ${Object.keys(modifiedSections).join(', ')}`
   await Promise.all([
     sb.from('reports').update({ data: updatedData }).eq('id', reportId),
-    sb.from('report_chats').insert({ report_id: reportId, role: 'assistant', content: assistantMsg }),
+    sb.from('report_chats').insert({ report_id: reportId, role: 'assistant', content: result.message }),
   ])
 
   return NextResponse.json({
-    sections: modifiedSections,
+    sections: result.sections,
+    message: result.message,
     updatedData,
   })
 }

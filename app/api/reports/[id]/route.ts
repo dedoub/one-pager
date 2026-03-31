@@ -8,7 +8,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const [reportRes, chatsRes, versionsRes] = await Promise.all([
     sb.from('reports').select('*').eq('id', id).single(),
     sb.from('report_chats').select('*').eq('report_id', id).order('created_at'),
-    sb.from('report_versions').select('id, version, created_at').eq('report_id', id).order('version'),
+    sb.from('report_versions').select('id, version, data, created_at').eq('report_id', id).order('version'),
   ])
 
   if (reportRes.error) return NextResponse.json({ error: reportRes.error.message }, { status: 500 })

@@ -1,0 +1,5 @@
+{"type":"server-started","port":56507,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:56507","screen_dir":"/Volumes/PRO-G40/app-dev/one-pager/.superpowers/brainstorm/1059-1774940747"}
+{"type":"screen-added","file":"/Volumes/PRO-G40/app-dev/one-pager/.superpowers/brainstorm/1059-1774940747/._index.html"}
+{"type":"screen-added","file":"/Volumes/PRO-G40/app-dev/one-pager/.superpowers/brainstorm/1059-1774940747/index.html"}
+{"type":"screen-updated","file":"/Volumes/PRO-G40/app-dev/one-pager/.superpowers/brainstorm/1059-1774940747/index.html"}
+{"type":"server-stopped","reason":"idle timeout"}

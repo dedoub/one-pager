@@ -41,9 +41,12 @@ export async function refineReport(
   reportData: Partial<ReportData>,
   chatHistory: { role: string; content: string }[],
   userMessage: string
-): Promise<Record<string, unknown>> {
+): Promise<{ sections: Record<string, unknown>; message: string }> {
   const prompt = buildChatPrompt(reportData, chatHistory, userMessage)
   const response = await callAI(prompt)
   const parsed = parseJSON(response)
-  return (parsed.sections as Record<string, unknown>) ?? parsed
+  return {
+    sections: (parsed.sections as Record<string, unknown>) ?? {},
+    message: (parsed.message as string) ?? `Updated sections: ${Object.keys(parsed.sections ?? parsed).join(', ')}`,
+  }
 }
