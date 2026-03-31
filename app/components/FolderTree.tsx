@@ -79,11 +79,12 @@ function RenameInput({ defaultValue, onSubmit, onCancel }: {
 }
 
 // Draggable report item
-function DraggableReport({ report, activeReportId, onSelectReport, onContextMenu }: {
+function DraggableReport({ report, activeReportId, onSelectReport, onContextMenu, nested }: {
   report: Report
   activeReportId: string | null
   onSelectReport: (id: string) => void
   onContextMenu: (e: React.MouseEvent, reportId: string) => void
+  nested?: boolean
 }) {
   return (
     <button
@@ -94,10 +95,11 @@ function DraggableReport({ report, activeReportId, onSelectReport, onContextMenu
       }}
       onClick={() => onSelectReport(report.id)}
       onContextMenu={e => { e.preventDefault(); onContextMenu(e, report.id) }}
-      className={`w-full flex items-center gap-1.5 px-2 py-1 text-xs rounded truncate cursor-grab active:cursor-grabbing ${
+      className={`w-full flex items-center gap-1.5 px-2 py-1 text-xs text-left rounded truncate cursor-grab active:cursor-grabbing ${
         activeReportId === report.id ? 'bg-blue-600/20 text-blue-400' : 'text-stone-400 hover:text-white hover:bg-stone-800'
       }`}
     >
+      {nested && <span className="w-3 flex-shrink-0" />}
       <FileText className="w-3.5 h-3.5 flex-shrink-0" />
       <span className="truncate flex-1">{report.ticker}</span>
     </button>
@@ -238,6 +240,7 @@ function FolderNode({ folder, reports, allFolders, activeReportId, onSelectRepor
                 activeReportId={activeReportId}
                 onSelectReport={onSelectReport}
                 onContextMenu={(e, id) => setReportMenu({ x: e.clientX, y: e.clientY, reportId: id })}
+                nested
               />
               {reportMenu?.reportId === report.id && (
                 <ContextMenu x={reportMenu.x} y={reportMenu.y} items={buildReportMenuItems(report.id)} onClose={() => setReportMenu(null)} />
