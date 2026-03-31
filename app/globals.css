@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", ui-serif, Georgia, serif;
+}
+
+/* A4 aspect ratio container for preview */
+.a4-page {
+  aspect-ratio: 210 / 297;
+  width: 100%;
+}
+
+/* Print-friendly styles for PDF */
+@media print {
+  body { margin: 0; padding: 0; }
+}
