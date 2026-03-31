@@ -45,6 +45,9 @@ export default function CompactTemplate({ data, sectionUpdates }: TemplateProps)
                 </p>
               </div>
             </div>
+            {header.description && (
+              <p className="text-[10px] text-stone-400 leading-snug mt-2">{header.description}</p>
+            )}
           </div>
         )}
       </ReportSection>

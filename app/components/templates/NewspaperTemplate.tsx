@@ -53,6 +53,9 @@ export default function NewspaperTemplate({ data, sectionUpdates, generating }: 
                 <span className="text-xs text-stone-500">MCap {header.marketCap}</span>
                 <span className="text-xs text-stone-500">52W High ${header.high52w?.toLocaleString()}</span>
               </div>
+              {header.description && (
+                <p className="text-[12px] font-serif text-stone-700 leading-relaxed mt-3 first-letter:text-2xl first-letter:font-bold first-letter:float-left first-letter:mr-1 first-letter:leading-none">{header.description}</p>
+              )}
             </div>
           </div>
         )}

@@ -101,6 +101,7 @@ export interface ReportHeader {
   ticker: string
   exchange: string
   sector: string
+  description?: string
   currentPrice: number
   marketCap: string
   high52w: number

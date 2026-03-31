@@ -54,6 +54,15 @@ Modify the report based on the user's request. Return JSON with:
   }
 }
 
-Valid section keys: header, valuation, growth, charts, thesis, verdict
+EDITABLE SECTIONS AND FIELDS:
+- "header": { companyName, ticker, exchange, sector, description (company intro text), currentPrice, marketCap, high52w, gapFromHigh }
+- "valuation": { pe, ps, evEbitda, peg, pbr } (all numbers or null)
+- "growth": { revenueGrowthYoy, grossMargin, operatingMargin, fcfMargin } (decimals, e.g. 0.25 = 25%)
+- "thesis": { summary (string), bullPoints (string[]), bearPoints (string[]) }
+- "verdict": { result ("pass_tier1"|"pass_tier2"|"watch"|"fail"), reason (string) }
+- "charts": { priceHistory [{date, price}], revenueTrend [{quarter, revenue}] }
+
+When the user asks to add/change content, update the appropriate field in the matching section.
+For company intro/description, use header.description.
 Return ONLY valid JSON, no markdown or explanation.`
 }

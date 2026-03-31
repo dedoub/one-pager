@@ -44,6 +44,9 @@ export default function ExecutiveTemplate({ data, sectionUpdates }: TemplateProp
               </div>
             </div>
             <p className="text-[10px] text-slate-400 mt-2">Report Date: {today}</p>
+            {header.description && (
+              <p className="text-sm text-slate-600 leading-relaxed mt-3">{header.description}</p>
+            )}
           </div>
         )}
       </ReportSection>
