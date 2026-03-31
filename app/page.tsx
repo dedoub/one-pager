@@ -118,7 +118,16 @@ export default function Home() {
     }
 
     for (const [key, value] of Object.entries(data.sections ?? {})) {
-      setSectionUpdates(prev => new Map(prev).set(key, value))
+      setSectionUpdates(prev => {
+        const next = new Map(prev)
+        const existing = next.get(key)
+        if (existing && typeof existing === 'object' && !Array.isArray(existing) && value && typeof value === 'object' && !Array.isArray(value)) {
+          next.set(key, { ...(existing as Record<string, unknown>), ...(value as Record<string, unknown>) })
+        } else {
+          next.set(key, value)
+        }
+        return next
+      })
     }
 
     setActiveReport(prev => prev ? { ...prev, data: data.updatedData } : null)
