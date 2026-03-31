@@ -169,7 +169,8 @@ export default function Home() {
                 const res = await fetch(`/api/reports/${activeReport.id}`)
                 const updated = await res.json()
                 setActiveReport(updated)
-                setVersions(updated.versions)
+                setVersions(updated.versions ?? [])
+                setSectionUpdates(new Map(Object.entries(updated.data ?? {})))
               }}
             />
             <div className="flex-1 overflow-y-auto p-6 bg-slate-900">
