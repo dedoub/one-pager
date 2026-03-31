@@ -1,60 +1,200 @@
 'use client'
 
-import { useState, useRef } from 'react'
-import { OnePagerData, SAMPLE_DATA } from '@/lib/types'
-import dynamic from 'next/dynamic'
-import EditorPanel from './components/EditorPanel'
-import PdfExport from './components/PdfExport'
-import { FileText } from 'lucide-react'
-
-const WarmTemplate = dynamic(() => import('./components/templates/WarmTemplate'), { ssr: false })
-const ModernTemplate = dynamic(() => import('./components/templates/ModernTemplate'), { ssr: false })
-const BoldTemplate = dynamic(() => import('./components/templates/BoldTemplate'), { ssr: false })
-
-function TemplateRenderer({ data }: { data: OnePagerData }) {
-  switch (data.template) {
-    case 'modern': return <ModernTemplate data={data} />
-    case 'bold': return <BoldTemplate data={data} />
-    default: return <WarmTemplate data={data} />
-  }
-}
+import { useState, useEffect, useCallback } from 'react'
+import type { Report, ReportFolder, ReportData, ChatMessage, SectionUpdate } from '@/lib/types'
+import FolderTree from './components/FolderTree'
+import ReportView from './components/ReportView'
+import TickerInput from './components/TickerInput'
+import FloatingChat from './components/FloatingChat'
+import VersionBar from './components/VersionBar'
 
 export default function Home() {
-  const [data, setData] = useState<OnePagerData>(SAMPLE_DATA)
-  const previewRef = useRef<HTMLDivElement>(null)
+  const [folders, setFolders] = useState<ReportFolder[]>([])
+  const [reports, setReports] = useState<Report[]>([])
+  const [activeReport, setActiveReport] = useState<Report | null>(null)
+  const [chats, setChats] = useState<ChatMessage[]>([])
+  const [versions, setVersions] = useState<{ id: string; version: number; created_at: string }[]>([])
+  const [generating, setGenerating] = useState(false)
+  const [sectionUpdates, setSectionUpdates] = useState<Map<string, unknown>>(new Map())
+
+  const loadData = useCallback(async () => {
+    const [fRes, rRes] = await Promise.all([
+      fetch('/api/folders').then(r => r.json()),
+      fetch('/api/reports').then(r => r.json()),
+    ])
+    setFolders(fRes)
+    setReports(rRes)
+  }, [])
+
+  useEffect(() => { loadData() }, [loadData])
+
+  const loadReport = useCallback(async (id: string) => {
+    const res = await fetch(`/api/reports/${id}`)
+    const data = await res.json()
+    setActiveReport(data)
+    setChats(data.chats ?? [])
+    setVersions(data.versions ?? [])
+    setSectionUpdates(new Map(Object.entries(data.data ?? {})))
+  }, [])
+
+  const handleGenerate = useCallback(async (ticker: string) => {
+    setGenerating(true)
+    setSectionUpdates(new Map())
+    setActiveReport(null)
+
+    const res = await fetch('/api/reports/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ticker }),
+    })
+
+    const reader = res.body?.getReader()
+    const decoder = new TextDecoder()
+    let reportId = ''
+
+    if (reader) {
+      let buffer = ''
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() ?? ''
+
+        let eventName = ''
+        for (const line of lines) {
+          if (line.startsWith('event: ')) {
+            eventName = line.slice(7)
+          } else if (line.startsWith('data: ') && eventName) {
+            const payload = JSON.parse(line.slice(6))
+
+            if (eventName === 'reportId') {
+              reportId = payload.id
+            } else if (eventName === 'section') {
+              const update = payload as SectionUpdate
+              setSectionUpdates(prev => new Map(prev).set(update.section, update.data))
+            } else if (eventName === 'done') {
+              if (reportId) await loadReport(reportId)
+              await loadData()
+            } else if (eventName === 'error') {
+              console.error('Generation error:', payload.message)
+            }
+            eventName = ''
+          }
+        }
+      }
+    }
+
+    setGenerating(false)
+  }, [loadReport, loadData])
+
+  const handleChat = useCallback(async (message: string) => {
+    if (!activeReport) return
+
+    setChats(prev => [...prev, { id: crypto.randomUUID(), report_id: activeReport.id, role: 'user', content: message, created_at: new Date().toISOString() }])
+
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reportId: activeReport.id, message }),
+    })
+
+    const data = await res.json()
+
+    for (const [key, value] of Object.entries(data.sections ?? {})) {
+      setSectionUpdates(prev => new Map(prev).set(key, value))
+    }
+
+    setActiveReport(prev => prev ? { ...prev, data: data.updatedData } : null)
+
+    setChats(prev => [...prev, {
+      id: crypto.randomUUID(),
+      report_id: activeReport.id,
+      role: 'assistant',
+      content: `Updated sections: ${Object.keys(data.sections ?? {}).join(', ')}`,
+      created_at: new Date().toISOString(),
+    }])
+  }, [activeReport])
+
+  const handleSave = useCallback(async () => {
+    if (!activeReport) return
+    const res = await fetch(`/api/reports/${activeReport.id}/save`, { method: 'POST' })
+    const data = await res.json()
+    setActiveReport(prev => prev ? { ...prev, version: data.version } : null)
+    await loadReport(activeReport.id)
+  }, [activeReport, loadReport])
 
   return (
-    <div className="h-screen flex flex-col bg-gray-100">
-      {/* Top bar */}
-      <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-            <FileText className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-sm font-semibold text-gray-900">One-Pager Generator</h1>
-            <p className="text-xs text-gray-500">Edit data on the left, preview on the right</p>
-          </div>
+    <div className="flex h-screen bg-slate-950 text-white">
+      {/* Sidebar */}
+      <div className="w-56 border-r border-slate-800 flex flex-col">
+        <div className="p-3 border-b border-slate-800">
+          <TickerInput onGenerate={handleGenerate} generating={generating} />
         </div>
-        <PdfExport targetRef={previewRef} />
-      </header>
+        <FolderTree
+          folders={folders}
+          reports={reports}
+          activeReportId={activeReport?.id ?? null}
+          onSelectReport={loadReport}
+          onFoldersChange={loadData}
+        />
+      </div>
 
-      {/* Editor + Preview */}
-      <div className="flex flex-1 min-h-0">
-        {/* Left: Editor */}
-        <div className="w-[420px] bg-white border-r border-gray-200 shrink-0 overflow-hidden">
-          <EditorPanel data={data} onChange={setData} />
-        </div>
-
-        {/* Right: Preview */}
-        <div className="flex-1 overflow-auto p-8 flex justify-center">
-          <div className="w-full max-w-[680px]">
-            <div ref={previewRef} className="a4-page bg-white shadow-2xl rounded-sm overflow-hidden">
-              <TemplateRenderer data={data} />
+      {/* Main area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {activeReport ? (
+          <>
+            <VersionBar
+              report={activeReport}
+              versions={versions}
+              onSave={handleSave}
+              onRestore={async (versionId) => {
+                await fetch(`/api/reports/${activeReport.id}/restore`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ versionId })
+                })
+                const res = await fetch(`/api/reports/${activeReport.id}`)
+                const updated = await res.json()
+                setActiveReport(updated)
+                setVersions(updated.versions)
+              }}
+            />
+            <div className="flex-1 overflow-y-auto p-6 bg-slate-900">
+              <ReportView
+                data={activeReport.data as Partial<ReportData>}
+                sectionUpdates={sectionUpdates}
+                generating={generating}
+              />
+            </div>
+          </>
+        ) : generating ? (
+          <div className="flex-1 overflow-y-auto p-6 bg-slate-900">
+            <ReportView
+              data={{}}
+              sectionUpdates={sectionUpdates}
+              generating={generating}
+            />
+          </div>
+        ) : (
+          <div className="flex-1 flex items-center justify-center bg-slate-900">
+            <div className="text-center text-slate-500">
+              <p className="text-lg font-medium">Enter a ticker to generate a report</p>
+              <p className="text-sm mt-1">or select an existing report from the sidebar</p>
             </div>
           </div>
-        </div>
+        )}
       </div>
+
+      {/* Floating chat */}
+      {activeReport && (
+        <FloatingChat
+          chats={chats}
+          onSend={handleChat}
+          reportTicker={activeReport.ticker}
+        />
+      )}
     </div>
   )
 }
