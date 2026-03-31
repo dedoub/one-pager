@@ -93,3 +93,100 @@ export const SAMPLE_DATA: OnePagerData = {
 
   template: 'warm',
 }
+
+// === Report Generator v2 Types ===
+
+export interface ReportHeader {
+  companyName: string
+  ticker: string
+  exchange: string
+  sector: string
+  currentPrice: number
+  marketCap: string
+  high52w: number
+  gapFromHigh: number
+}
+
+export interface ReportValuation {
+  pe: number | null
+  ps: number | null
+  evEbitda: number | null
+  peg: number | null
+  pbr: number | null
+}
+
+export interface ReportGrowth {
+  revenueGrowthYoy: number | null
+  grossMargin: number | null
+  operatingMargin: number | null
+  fcfMargin: number | null
+}
+
+export interface ReportCharts {
+  priceHistory: { date: string; price: number }[]
+  revenueTrend: { quarter: string; revenue: number }[]
+}
+
+export interface ReportThesis {
+  summary: string
+  bullPoints: string[]
+  bearPoints: string[]
+}
+
+export interface ReportVerdict {
+  result: 'pass_tier1' | 'pass_tier2' | 'watch' | 'fail'
+  reason: string
+}
+
+export interface ReportData {
+  header: ReportHeader
+  valuation: ReportValuation
+  growth: ReportGrowth
+  charts: ReportCharts
+  thesis: ReportThesis
+  verdict: ReportVerdict
+}
+
+export type ReportSectionKey = keyof ReportData
+
+export interface Report {
+  id: string
+  title: string
+  ticker: string
+  folder_id: string | null
+  status: 'generating' | 'complete' | 'error'
+  data: Partial<ReportData>
+  version: number
+  created_at: string
+  updated_at: string
+}
+
+export interface ReportVersion {
+  id: string
+  report_id: string
+  version: number
+  data: ReportData
+  created_at: string
+}
+
+export interface ReportFolder {
+  id: string
+  name: string
+  parent_id: string | null
+  sort_order: number
+  created_at: string
+  children?: ReportFolder[]
+}
+
+export interface ChatMessage {
+  id: string
+  report_id: string
+  role: 'user' | 'assistant'
+  content: string
+  created_at: string
+}
+
+export interface SectionUpdate {
+  section: ReportSectionKey
+  data: ReportData[ReportSectionKey]
+}
