@@ -10,17 +10,15 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
 
   const newVersion = report.version + 1
 
-  const [snapRes, updateRes] = await Promise.all([
-    sb.from('report_versions').insert({
-      report_id: id,
-      version: report.version,
-      data: report.data,
-    }),
-    sb.from('reports').update({ version: newVersion }).eq('id', id),
-  ])
+  const { error: snapErr } = await sb.from('report_versions').insert({
+    report_id: id,
+    version: report.version,
+    data: report.data,
+  })
+  if (snapErr) return NextResponse.json({ error: snapErr.message }, { status: 500 })
 
-  if (snapRes.error) return NextResponse.json({ error: snapRes.error.message }, { status: 500 })
-  if (updateRes.error) return NextResponse.json({ error: updateRes.error.message }, { status: 500 })
+  const { error: updateErr } = await sb.from('reports').update({ version: newVersion }).eq('id', id)
+  if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 })
 
   return NextResponse.json({ version: newVersion })
 }

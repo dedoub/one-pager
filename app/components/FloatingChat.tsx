@@ -24,8 +24,13 @@ export default function FloatingChat({ chats, onSend, reportTicker }: {
     const msg = input.trim()
     setInput('')
     setSending(true)
-    await onSend(msg)
-    setSending(false)
+    try {
+      await onSend(msg)
+    } catch {
+      // Error handled by parent
+    } finally {
+      setSending(false)
+    }
   }
 
   return (

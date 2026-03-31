@@ -54,6 +54,7 @@ export default function Home() {
 
     if (reader) {
       let buffer = ''
+      let eventName = ''
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
@@ -62,7 +63,6 @@ export default function Home() {
         const lines = buffer.split('\n')
         buffer = lines.pop() ?? ''
 
-        let eventName = ''
         for (const line of lines) {
           if (line.startsWith('event: ')) {
             eventName = line.slice(7)
@@ -101,6 +101,17 @@ export default function Home() {
     })
 
     const data = await res.json()
+
+    if (!res.ok) {
+      setChats(prev => [...prev, {
+        id: crypto.randomUUID(),
+        report_id: activeReport.id,
+        role: 'assistant',
+        content: `Error: ${data.error ?? 'Failed to process message'}`,
+        created_at: new Date().toISOString(),
+      }])
+      return
+    }
 
     for (const [key, value] of Object.entries(data.sections ?? {})) {
       setSectionUpdates(prev => new Map(prev).set(key, value))
