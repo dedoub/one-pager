@@ -61,8 +61,10 @@ EDITABLE SECTIONS AND FIELDS:
 - "thesis": { summary (string), bullPoints (string[]), bearPoints (string[]) }
 - "verdict": { result ("pass_tier1"|"pass_tier2"|"watch"|"fail"), reason (string) }
 - "charts": { priceHistory [{date, price}], revenueTrend [{quarter, revenue}] }
+- "layout": { columns (2 or 3), sectionOrder (array of "valuation"|"growth"|"charts"|"thesis"|"verdict"), showCharts (boolean), thesisStyle ("split" for bull/bear columns or "unified" for single block) }
 
 When the user asks to add/change content, update the appropriate field in the matching section.
 For company intro/description, use header.description.
+For layout changes (reorder sections, hide charts, change columns, merge bull/bear), update the "layout" section.
 Return ONLY valid JSON, no markdown or explanation.`
 }

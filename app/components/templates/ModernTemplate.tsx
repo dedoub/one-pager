@@ -26,7 +26,9 @@ function VerdictPill({ result }: { result: string }) {
 }
 
 export default function ModernTemplate({ data, sectionUpdates }: TemplateProps) {
-  const { header, valuation, growth, charts, thesis, verdict } = useSections(data, sectionUpdates)
+  const { header, valuation, growth, charts, thesis, verdict, layout } = useSections(data, sectionUpdates)
+  const showCharts = layout?.showCharts !== false
+  const thesisStyle = layout?.thesisStyle ?? 'split'
 
   return (
     <div className="max-w-4xl mx-auto bg-stone-900 text-white rounded-2xl overflow-hidden" id="report-content">
@@ -74,20 +76,22 @@ export default function ModernTemplate({ data, sectionUpdates }: TemplateProps) 
           )}
         </ReportSection>
 
-        <ReportSection title="" filled={!!charts}>
-          {charts && (
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-stone-800 rounded-lg p-4">
-                <h3 className="text-xs text-stone-400 uppercase tracking-wider mb-3">Price History</h3>
-                <PriceChart data={charts.priceHistory} />
+        {showCharts && (
+          <ReportSection title="" filled={!!charts}>
+            {charts && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-stone-800 rounded-lg p-4">
+                  <h3 className="text-xs text-stone-400 uppercase tracking-wider mb-3">Price History</h3>
+                  <PriceChart data={charts.priceHistory} />
+                </div>
+                <div className="bg-stone-800 rounded-lg p-4">
+                  <h3 className="text-xs text-stone-400 uppercase tracking-wider mb-3">Revenue Trend</h3>
+                  <RevenueTrendChart data={charts.revenueTrend} />
+                </div>
               </div>
-              <div className="bg-stone-800 rounded-lg p-4">
-                <h3 className="text-xs text-stone-400 uppercase tracking-wider mb-3">Revenue Trend</h3>
-                <RevenueTrendChart data={charts.revenueTrend} />
-              </div>
-            </div>
-          )}
-        </ReportSection>
+            )}
+          </ReportSection>
+        )}
 
         <ReportSection title="" filled={!!verdict}>
           {verdict && (
@@ -102,16 +106,26 @@ export default function ModernTemplate({ data, sectionUpdates }: TemplateProps) 
           {thesis && (
             <div className="space-y-4">
               <p className="text-sm text-stone-300 leading-relaxed">{thesis.summary}</p>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-emerald-500/5 rounded-lg p-4">
-                  <h4 className="text-xs font-semibold uppercase tracking-wider text-emerald-400 mb-3">Bull Case</h4>
-                  <ul className="space-y-2">{thesis.bullPoints.map((p, i) => (<li key={i} className="text-sm text-stone-300 flex gap-2"><span className="text-emerald-500 font-bold shrink-0">{i + 1}</span>{p}</li>))}</ul>
+              {thesisStyle === 'unified' ? (
+                <div className="bg-stone-800 rounded-lg p-4">
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-3">Key Points</h4>
+                  <ul className="space-y-2">
+                    {thesis.bullPoints.map((p, i) => (<li key={`b${i}`} className="text-sm text-stone-300 flex gap-2"><span className="text-emerald-500 font-bold shrink-0">+</span>{p}</li>))}
+                    {thesis.bearPoints.map((p, i) => (<li key={`r${i}`} className="text-sm text-stone-300 flex gap-2"><span className="text-red-500 font-bold shrink-0">−</span>{p}</li>))}
+                  </ul>
                 </div>
-                <div className="bg-red-500/5 rounded-lg p-4">
-                  <h4 className="text-xs font-semibold uppercase tracking-wider text-red-400 mb-3">Bear Case</h4>
-                  <ul className="space-y-2">{thesis.bearPoints.map((p, i) => (<li key={i} className="text-sm text-stone-300 flex gap-2"><span className="text-red-500 font-bold shrink-0">{i + 1}</span>{p}</li>))}</ul>
+              ) : (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-emerald-500/5 rounded-lg p-4">
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-emerald-400 mb-3">Bull Case</h4>
+                    <ul className="space-y-2">{thesis.bullPoints.map((p, i) => (<li key={i} className="text-sm text-stone-300 flex gap-2"><span className="text-emerald-500 font-bold shrink-0">{i + 1}</span>{p}</li>))}</ul>
+                  </div>
+                  <div className="bg-red-500/5 rounded-lg p-4">
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-red-400 mb-3">Bear Case</h4>
+                    <ul className="space-y-2">{thesis.bearPoints.map((p, i) => (<li key={i} className="text-sm text-stone-300 flex gap-2"><span className="text-red-500 font-bold shrink-0">{i + 1}</span>{p}</li>))}</ul>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
         </ReportSection>

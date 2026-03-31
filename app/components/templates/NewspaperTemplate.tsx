@@ -26,8 +26,10 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 }
 
 export default function NewspaperTemplate({ data, sectionUpdates, generating }: TemplateProps) {
-  const { header, valuation, growth, charts, thesis, verdict } = useSections(data, sectionUpdates)
+  const { header, valuation, growth, charts, thesis, verdict, layout } = useSections(data, sectionUpdates)
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+  const showCharts = layout?.showCharts !== false
+  const thesisStyle = layout?.thesisStyle ?? 'split'
 
   return (
     <div className="max-w-4xl mx-auto bg-[#faf8f3] text-stone-900 shadow-lg" id="report-content">
@@ -94,32 +96,42 @@ export default function NewspaperTemplate({ data, sectionUpdates, generating }: 
 
         <SectionDivider />
 
-        <div className="grid grid-cols-2 gap-0 mt-3">
-          <div className="pr-4 border-r border-stone-300">
-            <ReportSection title="" filled={!!charts}>{charts && (<div><SectionTitle>Price History (12M)</SectionTitle><PriceChart data={charts.priceHistory} /></div>)}</ReportSection>
-          </div>
-          <div className="pl-4">
-            <ReportSection title="" filled={!!charts}>{charts && (<div><SectionTitle>Revenue Trend</SectionTitle><RevenueTrendChart data={charts.revenueTrend} /></div>)}</ReportSection>
-          </div>
-        </div>
-
-        <SectionDivider />
+        {showCharts && (
+          <>
+            <div className="grid grid-cols-2 gap-0 mt-3">
+              <div className="pr-4 border-r border-stone-300">
+                <ReportSection title="" filled={!!charts}>{charts && (<div><SectionTitle>Price History (12M)</SectionTitle><PriceChart data={charts.priceHistory} /></div>)}</ReportSection>
+              </div>
+              <div className="pl-4">
+                <ReportSection title="" filled={!!charts}>{charts && (<div><SectionTitle>Revenue Trend</SectionTitle><RevenueTrendChart data={charts.revenueTrend} /></div>)}</ReportSection>
+              </div>
+            </div>
+            <SectionDivider />
+          </>
+        )}
 
         <ReportSection title="" filled={!!thesis}>
           {thesis && (
             <div className="mt-3">
               <SectionTitle>Investment Thesis</SectionTitle>
               <p className="text-[12px] font-serif text-stone-800 leading-relaxed mb-4 first-letter:text-3xl first-letter:font-bold first-letter:float-left first-letter:mr-1 first-letter:leading-none">{thesis.summary}</p>
-              <div className="grid grid-cols-2 gap-0">
-                <div className="pr-4 border-r border-stone-300">
-                  <div className="text-[9px] font-bold uppercase tracking-[0.2em] text-emerald-800 font-sans mb-2 border-b border-emerald-800 pb-0.5 inline-block">Bull Case</div>
-                  <ul className="space-y-1.5">{thesis.bullPoints.map((p, i) => (<li key={i} className="text-[11px] font-serif text-stone-700 flex gap-1.5 leading-snug"><span className="text-emerald-700 font-bold shrink-0">{i + 1}.</span>{p}</li>))}</ul>
+              {thesisStyle === 'unified' ? (
+                <ul className="space-y-1.5">
+                  {thesis.bullPoints.map((p, i) => (<li key={`b${i}`} className="text-[11px] font-serif text-stone-700 flex gap-1.5 leading-snug"><span className="text-emerald-700 font-bold shrink-0">+</span>{p}</li>))}
+                  {thesis.bearPoints.map((p, i) => (<li key={`r${i}`} className="text-[11px] font-serif text-stone-700 flex gap-1.5 leading-snug"><span className="text-red-700 font-bold shrink-0">−</span>{p}</li>))}
+                </ul>
+              ) : (
+                <div className="grid grid-cols-2 gap-0">
+                  <div className="pr-4 border-r border-stone-300">
+                    <div className="text-[9px] font-bold uppercase tracking-[0.2em] text-emerald-800 font-sans mb-2 border-b border-emerald-800 pb-0.5 inline-block">Bull Case</div>
+                    <ul className="space-y-1.5">{thesis.bullPoints.map((p, i) => (<li key={i} className="text-[11px] font-serif text-stone-700 flex gap-1.5 leading-snug"><span className="text-emerald-700 font-bold shrink-0">{i + 1}.</span>{p}</li>))}</ul>
+                  </div>
+                  <div className="pl-4">
+                    <div className="text-[9px] font-bold uppercase tracking-[0.2em] text-red-800 font-sans mb-2 border-b border-red-800 pb-0.5 inline-block">Bear Case</div>
+                    <ul className="space-y-1.5">{thesis.bearPoints.map((p, i) => (<li key={i} className="text-[11px] font-serif text-stone-700 flex gap-1.5 leading-snug"><span className="text-red-700 font-bold shrink-0">{i + 1}.</span>{p}</li>))}</ul>
+                  </div>
                 </div>
-                <div className="pl-4">
-                  <div className="text-[9px] font-bold uppercase tracking-[0.2em] text-red-800 font-sans mb-2 border-b border-red-800 pb-0.5 inline-block">Bear Case</div>
-                  <ul className="space-y-1.5">{thesis.bearPoints.map((p, i) => (<li key={i} className="text-[11px] font-serif text-stone-700 flex gap-1.5 leading-snug"><span className="text-red-700 font-bold shrink-0">{i + 1}.</span>{p}</li>))}</ul>
-                </div>
-              </div>
+              )}
             </div>
           )}
         </ReportSection>

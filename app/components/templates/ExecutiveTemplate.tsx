@@ -21,8 +21,10 @@ function VerdictTag({ result }: { result: string }) {
 }
 
 export default function ExecutiveTemplate({ data, sectionUpdates }: TemplateProps) {
-  const { header, valuation, growth, charts, thesis, verdict } = useSections(data, sectionUpdates)
+  const { header, valuation, growth, charts, thesis, verdict, layout } = useSections(data, sectionUpdates)
   const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  const showCharts = layout?.showCharts !== false
+  const thesisStyle = layout?.thesisStyle ?? 'split'
 
   return (
     <div className="max-w-4xl mx-auto bg-white text-slate-900" id="report-content">
@@ -79,20 +81,22 @@ export default function ExecutiveTemplate({ data, sectionUpdates }: TemplateProp
         </ReportSection>
 
         {/* Charts */}
-        <ReportSection title="" filled={!!charts}>
-          {charts && (
-            <div className="grid grid-cols-2 gap-8">
-              <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">12-Month Price</h3>
-                <PriceChart data={charts.priceHistory} />
+        {showCharts && (
+          <ReportSection title="" filled={!!charts}>
+            {charts && (
+              <div className="grid grid-cols-2 gap-8">
+                <div>
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">12-Month Price</h3>
+                  <PriceChart data={charts.priceHistory} />
+                </div>
+                <div>
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">Quarterly Revenue</h3>
+                  <RevenueTrendChart data={charts.revenueTrend} />
+                </div>
               </div>
-              <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">Quarterly Revenue</h3>
-                <RevenueTrendChart data={charts.revenueTrend} />
-              </div>
-            </div>
-          )}
-        </ReportSection>
+            )}
+          </ReportSection>
+        )}
 
         {/* Verdict */}
         <ReportSection title="" filled={!!verdict}>
@@ -110,24 +114,35 @@ export default function ExecutiveTemplate({ data, sectionUpdates }: TemplateProp
             <div>
               <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 mb-4 border-b border-slate-200 pb-2">Investment Thesis</h2>
               <p className="text-sm text-slate-700 leading-relaxed mb-6">{thesis.summary}</p>
-              <div className="grid grid-cols-2 gap-8">
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-700 mb-3">Bull Case</h4>
-                  <ul className="space-y-2">
-                    {thesis.bullPoints.map((p, i) => (
-                      <li key={i} className="text-sm text-slate-700 pl-4 relative before:content-[''] before:absolute before:left-0 before:top-2 before:w-1.5 before:h-1.5 before:rounded-full before:bg-emerald-500">{p}</li>
-                    ))}
-                  </ul>
+              {thesisStyle === 'unified' ? (
+                <ul className="space-y-2">
+                  {thesis.bullPoints.map((p, i) => (
+                    <li key={`b${i}`} className="text-sm text-slate-700 pl-4 relative before:content-[''] before:absolute before:left-0 before:top-2 before:w-1.5 before:h-1.5 before:rounded-full before:bg-emerald-500">{p}</li>
+                  ))}
+                  {thesis.bearPoints.map((p, i) => (
+                    <li key={`r${i}`} className="text-sm text-slate-700 pl-4 relative before:content-[''] before:absolute before:left-0 before:top-2 before:w-1.5 before:h-1.5 before:rounded-full before:bg-red-500">{p}</li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="grid grid-cols-2 gap-8">
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-700 mb-3">Bull Case</h4>
+                    <ul className="space-y-2">
+                      {thesis.bullPoints.map((p, i) => (
+                        <li key={i} className="text-sm text-slate-700 pl-4 relative before:content-[''] before:absolute before:left-0 before:top-2 before:w-1.5 before:h-1.5 before:rounded-full before:bg-emerald-500">{p}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-red-700 mb-3">Bear Case</h4>
+                    <ul className="space-y-2">
+                      {thesis.bearPoints.map((p, i) => (
+                        <li key={i} className="text-sm text-slate-700 pl-4 relative before:content-[''] before:absolute before:left-0 before:top-2 before:w-1.5 before:h-1.5 before:rounded-full before:bg-red-500">{p}</li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-red-700 mb-3">Bear Case</h4>
-                  <ul className="space-y-2">
-                    {thesis.bearPoints.map((p, i) => (
-                      <li key={i} className="text-sm text-slate-700 pl-4 relative before:content-[''] before:absolute before:left-0 before:top-2 before:w-1.5 before:h-1.5 before:rounded-full before:bg-red-500">{p}</li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
+              )}
             </div>
           )}
         </ReportSection>

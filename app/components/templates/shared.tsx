@@ -1,6 +1,6 @@
 'use client'
 
-import type { ReportData, ReportHeader, ReportValuation, ReportGrowth, ReportCharts, ReportThesis, ReportVerdict } from '@/lib/types'
+import type { ReportData, ReportHeader, ReportValuation, ReportGrowth, ReportCharts, ReportThesis, ReportVerdict, ReportLayout } from '@/lib/types'
 
 export type TemplateId = 'newspaper' | 'modern' | 'executive' | 'compact'
 
@@ -25,6 +25,7 @@ export function useSections(data: Partial<ReportData>, sectionUpdates: Map<strin
     charts: (sectionUpdates.get('charts') ?? data.charts) as ReportCharts | undefined,
     thesis: (sectionUpdates.get('thesis') ?? data.thesis) as ReportThesis | undefined,
     verdict: (sectionUpdates.get('verdict') ?? data.verdict) as ReportVerdict | undefined,
+    layout: (sectionUpdates.get('layout') ?? data.layout) as ReportLayout | undefined,
   }
 }
 

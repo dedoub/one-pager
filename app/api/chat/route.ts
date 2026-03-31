@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
 
   const updatedData = { ...report.data }
   for (const [key, value] of Object.entries(result.sections)) {
-    if (key in updatedData || ['header', 'valuation', 'growth', 'charts', 'thesis', 'verdict'].includes(key)) {
+    if (key in updatedData || ['header', 'valuation', 'growth', 'charts', 'thesis', 'verdict', 'layout'].includes(key)) {
       const existing = (updatedData as Record<string, unknown>)[key]
       // Deep merge: preserve existing fields, overlay new ones
       if (existing && typeof existing === 'object' && !Array.isArray(existing) && value && typeof value === 'object' && !Array.isArray(value)) {

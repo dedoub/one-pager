@@ -25,7 +25,8 @@ function Row({ label, children, highlight }: { label: string; children: React.Re
 }
 
 export default function CompactTemplate({ data, sectionUpdates }: TemplateProps) {
-  const { header, valuation, growth, thesis, verdict } = useSections(data, sectionUpdates)
+  const { header, valuation, growth, thesis, verdict, layout } = useSections(data, sectionUpdates)
+  const thesisStyle = layout?.thesisStyle ?? 'split'
 
   return (
     <div className="max-w-md mx-auto bg-stone-900 text-white rounded-xl overflow-hidden" id="report-content">
@@ -102,20 +103,31 @@ export default function CompactTemplate({ data, sectionUpdates }: TemplateProps)
           {thesis && (
             <div className="bg-stone-800 rounded-lg p-3 space-y-2">
               <p className="text-[11px] text-stone-300 leading-snug">{thesis.summary}</p>
-              <div className="grid grid-cols-2 gap-3 pt-1">
-                <div>
-                  <p className="text-[9px] uppercase tracking-widest text-emerald-500 mb-1">Bull</p>
+              {thesisStyle === 'unified' ? (
+                <div className="pt-1">
                   {thesis.bullPoints.slice(0, 3).map((p, i) => (
-                    <p key={i} className="text-[10px] text-stone-400 leading-snug mb-1">• {p}</p>
+                    <p key={`b${i}`} className="text-[10px] text-stone-400 leading-snug mb-1"><span className="text-emerald-500">+</span> {p}</p>
                   ))}
-                </div>
-                <div>
-                  <p className="text-[9px] uppercase tracking-widest text-red-500 mb-1">Bear</p>
                   {thesis.bearPoints.slice(0, 3).map((p, i) => (
-                    <p key={i} className="text-[10px] text-stone-400 leading-snug mb-1">• {p}</p>
+                    <p key={`r${i}`} className="text-[10px] text-stone-400 leading-snug mb-1"><span className="text-red-500">−</span> {p}</p>
                   ))}
                 </div>
-              </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3 pt-1">
+                  <div>
+                    <p className="text-[9px] uppercase tracking-widest text-emerald-500 mb-1">Bull</p>
+                    {thesis.bullPoints.slice(0, 3).map((p, i) => (
+                      <p key={i} className="text-[10px] text-stone-400 leading-snug mb-1">• {p}</p>
+                    ))}
+                  </div>
+                  <div>
+                    <p className="text-[9px] uppercase tracking-widest text-red-500 mb-1">Bear</p>
+                    {thesis.bearPoints.slice(0, 3).map((p, i) => (
+                      <p key={i} className="text-[10px] text-stone-400 leading-snug mb-1">• {p}</p>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </ReportSection>
