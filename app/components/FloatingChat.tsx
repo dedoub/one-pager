@@ -84,6 +84,18 @@ export default function FloatingChat({ chats, onSend, reportTicker }: {
                   </div>
                 </div>
               ))}
+              {sending && (
+                <div className="flex justify-start">
+                  <div className="max-w-[85%] px-3 py-2 rounded-lg rounded-bl-sm bg-stone-800 text-stone-400 text-xs flex items-center gap-1.5">
+                    <span className="flex gap-0.5">
+                      <span className="w-1.5 h-1.5 bg-stone-500 rounded-full animate-bounce [animation-delay:0ms]" />
+                      <span className="w-1.5 h-1.5 bg-stone-500 rounded-full animate-bounce [animation-delay:150ms]" />
+                      <span className="w-1.5 h-1.5 bg-stone-500 rounded-full animate-bounce [animation-delay:300ms]" />
+                    </span>
+                    Analyzing...
+                  </div>
+                </div>
+              )}
               <div ref={messagesEndRef} />
             </div>
 
