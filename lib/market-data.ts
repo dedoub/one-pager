@@ -26,33 +26,37 @@ export async function fetchMarketData(ticker: string): Promise<MarketData> {
   const keyStats = quote.defaultKeyStatistics
   const financial = quote.financialData
 
+  const toNum = (v: unknown): number | null =>
+    typeof v === 'number' && isFinite(v) ? v : null
+
+  const currentPrice = toNum(price?.regularMarketPrice) ?? 0
+  const high52w = toNum(summary?.fiftyTwoWeekHigh) ?? 0
+
   const header: ReportHeader = {
-    companyName: price?.longName ?? price?.shortName ?? ticker,
+    companyName: String(price?.longName ?? price?.shortName ?? ticker),
     ticker: ticker.toUpperCase(),
-    exchange: price?.exchangeName ?? '',
+    exchange: String(price?.exchangeName ?? ''),
     sector: '',
-    currentPrice: price?.regularMarketPrice ?? 0,
-    marketCap: formatMarketCap(price?.marketCap ?? 0),
-    high52w: summary?.fiftyTwoWeekHigh ?? 0,
-    gapFromHigh: summary?.fiftyTwoWeekHigh
-      ? ((price?.regularMarketPrice ?? 0) - summary.fiftyTwoWeekHigh) / summary.fiftyTwoWeekHigh * 100
-      : 0,
+    currentPrice,
+    marketCap: formatMarketCap(toNum(price?.marketCap) ?? 0),
+    high52w,
+    gapFromHigh: high52w ? (currentPrice - high52w) / high52w * 100 : 0,
   }
 
   const valuation: ReportValuation = {
-    pe: summary?.trailingPE ?? keyStats?.trailingPE ?? null,
-    ps: keyStats?.priceToSalesTrailing12Months ?? null,
-    evEbitda: keyStats?.enterpriseToEbitda ?? null,
-    peg: keyStats?.pegRatio ?? null,
-    pbr: keyStats?.priceToBook ?? null,
+    pe: toNum(summary?.trailingPE) ?? toNum(keyStats?.trailingPE),
+    ps: toNum(keyStats?.priceToSalesTrailing12Months),
+    evEbitda: toNum(keyStats?.enterpriseToEbitda),
+    peg: toNum(keyStats?.pegRatio),
+    pbr: toNum(keyStats?.priceToBook),
   }
 
   const growth: ReportGrowth = {
-    revenueGrowthYoy: financial?.revenueGrowth ?? null,
-    grossMargin: financial?.grossMargins ?? null,
-    operatingMargin: financial?.operatingMargins ?? null,
+    revenueGrowthYoy: toNum(financial?.revenueGrowth),
+    grossMargin: toNum(financial?.grossMargins),
+    operatingMargin: toNum(financial?.operatingMargins),
     fcfMargin: financial?.freeCashflow && financial?.totalRevenue
-      ? financial.freeCashflow / financial.totalRevenue
+      ? (financial.freeCashflow as number) / (financial.totalRevenue as number)
       : null,
   }
 
