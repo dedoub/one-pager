@@ -78,7 +78,33 @@ function RenameInput({ defaultValue, onSubmit, onCancel }: {
   )
 }
 
-function FolderNode({ folder, reports, allFolders, activeReportId, onSelectReport, expanded, toggleExpand, onRefresh }: {
+// Draggable report item
+function DraggableReport({ report, activeReportId, onSelectReport, onContextMenu }: {
+  report: Report
+  activeReportId: string | null
+  onSelectReport: (id: string) => void
+  onContextMenu: (e: React.MouseEvent, reportId: string) => void
+}) {
+  return (
+    <button
+      draggable
+      onDragStart={e => {
+        e.dataTransfer.setData('reportId', report.id)
+        e.dataTransfer.effectAllowed = 'move'
+      }}
+      onClick={() => onSelectReport(report.id)}
+      onContextMenu={e => { e.preventDefault(); onContextMenu(e, report.id) }}
+      className={`w-full flex items-center gap-1.5 px-2 py-1 text-xs rounded truncate cursor-grab active:cursor-grabbing ${
+        activeReportId === report.id ? 'bg-blue-600/20 text-blue-400' : 'text-stone-400 hover:text-white hover:bg-stone-800'
+      }`}
+    >
+      <FileText className="w-3.5 h-3.5 flex-shrink-0" />
+      <span className="truncate flex-1">{report.ticker}</span>
+    </button>
+  )
+}
+
+function FolderNode({ folder, reports, allFolders, activeReportId, onSelectReport, expanded, toggleExpand, onRefresh, onMoveReport }: {
   folder: ReportFolder
   reports: Report[]
   allFolders: ReportFolder[]
@@ -87,6 +113,7 @@ function FolderNode({ folder, reports, allFolders, activeReportId, onSelectRepor
   expanded: Set<string>
   toggleExpand: (id: string) => void
   onRefresh: () => void
+  onMoveReport: (reportId: string, folderId: string | null) => void
 }) {
   const isOpen = expanded.has(folder.id)
   const folderReports = reports.filter(r => r.folder_id === folder.id)
@@ -95,6 +122,7 @@ function FolderNode({ folder, reports, allFolders, activeReportId, onSelectRepor
   const [renaming, setRenaming] = useState(false)
   const [addingSubfolder, setAddingSubfolder] = useState(false)
   const [reportMenu, setReportMenu] = useState<{ x: number; y: number; reportId: string } | null>(null)
+  const [dragOver, setDragOver] = useState(false)
 
   const handleRename = async (name: string) => {
     await fetch(`/api/folders/${folder.id}`, {
@@ -122,30 +150,19 @@ function FolderNode({ folder, reports, allFolders, activeReportId, onSelectRepor
     onRefresh()
   }
 
-  const handleMoveReport = async (reportId: string, targetFolderId: string | null) => {
-    await fetch(`/api/reports/${reportId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ folder_id: targetFolderId }),
-    })
-    onRefresh()
-  }
-
   const folderMenuItems = [
     { label: 'Rename', onClick: () => setRenaming(true) },
     { label: 'New Subfolder', onClick: () => { setAddingSubfolder(true); if (!isOpen) toggleExpand(folder.id) } },
     { label: 'Delete', onClick: handleDelete, danger: true },
   ]
 
-  const buildMoveItems = (reportId: string) => {
+  const buildReportMenuItems = (reportId: string) => {
     const items: { label: string; onClick: () => void; danger?: boolean }[] = []
-    if (folder.id) {
-      items.push({ label: 'Move to Root', onClick: () => handleMoveReport(reportId, null) })
-    }
+    items.push({ label: 'Move to Root', onClick: () => onMoveReport(reportId, null) })
     allFolders
       .filter(f => f.id !== folder.id)
       .forEach(f => {
-        items.push({ label: `Move to ${f.name}`, onClick: () => handleMoveReport(reportId, f.id) })
+        items.push({ label: `Move to ${f.name}`, onClick: () => onMoveReport(reportId, f.id) })
       })
     items.push({ label: 'Delete Report', onClick: async () => {
       await fetch(`/api/reports/${reportId}`, { method: 'DELETE' })
@@ -154,12 +171,34 @@ function FolderNode({ folder, reports, allFolders, activeReportId, onSelectRepor
     return items
   }
 
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    setDragOver(true)
+  }
+
+  const handleDragLeave = () => setDragOver(false)
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setDragOver(false)
+    const reportId = e.dataTransfer.getData('reportId')
+    if (reportId) onMoveReport(reportId, folder.id)
+  }
+
   return (
     <div>
       <div
-        className="group w-full flex items-center gap-1.5 px-2 py-1 text-xs text-stone-400 hover:text-white hover:bg-stone-800 rounded cursor-pointer"
+        className={`group w-full flex items-center gap-1.5 px-2 py-1 text-xs rounded cursor-pointer transition-colors ${
+          dragOver
+            ? 'bg-blue-600/20 text-blue-400'
+            : 'text-stone-400 hover:text-white hover:bg-stone-800'
+        }`}
         onClick={() => toggleExpand(folder.id)}
         onContextMenu={e => { e.preventDefault(); setContextMenu({ x: e.clientX, y: e.clientY }) }}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
       >
         {hasChildren ? (
           isOpen ? <ChevronDown className="w-3 h-3 flex-shrink-0" /> : <ChevronRight className="w-3 h-3 flex-shrink-0" />
@@ -190,28 +229,18 @@ function FolderNode({ folder, reports, allFolders, activeReportId, onSelectRepor
             </div>
           )}
           {folder.children?.map(child => (
-            <FolderNode key={child.id} folder={child} reports={reports} allFolders={allFolders} activeReportId={activeReportId} onSelectReport={onSelectReport} expanded={expanded} toggleExpand={toggleExpand} onRefresh={onRefresh} />
+            <FolderNode key={child.id} folder={child} reports={reports} allFolders={allFolders} activeReportId={activeReportId} onSelectReport={onSelectReport} expanded={expanded} toggleExpand={toggleExpand} onRefresh={onRefresh} onMoveReport={onMoveReport} />
           ))}
           {folderReports.map(report => (
             <div key={report.id} className="group relative">
-              <button
-                onClick={() => onSelectReport(report.id)}
-                onContextMenu={e => { e.preventDefault(); setReportMenu({ x: e.clientX, y: e.clientY, reportId: report.id }) }}
-                className={`w-full flex items-center gap-1.5 px-2 py-1 text-xs rounded truncate ${
-                  activeReportId === report.id ? 'bg-blue-600/20 text-blue-400' : 'text-stone-400 hover:text-white hover:bg-stone-800'
-                }`}
-              >
-                <FileText className="w-3.5 h-3.5 flex-shrink-0" />
-                <span className="truncate flex-1">{report.ticker}</span>
-                <span
-                  onClick={e => { e.stopPropagation(); setReportMenu({ x: e.clientX, y: e.clientY, reportId: report.id }) }}
-                  className="hidden group-hover:block text-stone-500 hover:text-white flex-shrink-0 cursor-pointer"
-                >
-                  <MoreHorizontal className="w-3.5 h-3.5" />
-                </span>
-              </button>
+              <DraggableReport
+                report={report}
+                activeReportId={activeReportId}
+                onSelectReport={onSelectReport}
+                onContextMenu={(e, id) => setReportMenu({ x: e.clientX, y: e.clientY, reportId: id })}
+              />
               {reportMenu?.reportId === report.id && (
-                <ContextMenu x={reportMenu.x} y={reportMenu.y} items={buildMoveItems(report.id)} onClose={() => setReportMenu(null)} />
+                <ContextMenu x={reportMenu.x} y={reportMenu.y} items={buildReportMenuItems(report.id)} onClose={() => setReportMenu(null)} />
               )}
             </div>
           ))}
@@ -232,6 +261,7 @@ export default function FolderTree({ folders, reports, activeReportId, onSelectR
   const [adding, setAdding] = useState(false)
   const [newName, setNewName] = useState('')
   const [rootReportMenu, setRootReportMenu] = useState<{ x: number; y: number; reportId: string } | null>(null)
+  const [rootDragOver, setRootDragOver] = useState(false)
 
   const toggleExpand = (id: string) => {
     setExpanded(prev => {
@@ -277,6 +307,21 @@ export default function FolderTree({ folders, reports, activeReportId, onSelectR
     return items
   }
 
+  const handleRootDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    setRootDragOver(true)
+  }
+
+  const handleRootDragLeave = () => setRootDragOver(false)
+
+  const handleRootDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setRootDragOver(false)
+    const reportId = e.dataTransfer.getData('reportId')
+    if (reportId) handleMoveReport(reportId, null)
+  }
+
   return (
     <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
       <div className="flex items-center justify-between px-2 py-1">
@@ -301,27 +346,29 @@ export default function FolderTree({ folders, reports, activeReportId, onSelectR
       )}
 
       {tree.map(folder => (
-        <FolderNode key={folder.id} folder={folder} reports={reports} allFolders={folders} activeReportId={activeReportId} onSelectReport={onSelectReport} expanded={expanded} toggleExpand={toggleExpand} onRefresh={onFoldersChange} />
+        <FolderNode key={folder.id} folder={folder} reports={reports} allFolders={folders} activeReportId={activeReportId} onSelectReport={onSelectReport} expanded={expanded} toggleExpand={toggleExpand} onRefresh={onFoldersChange} onMoveReport={handleMoveReport} />
       ))}
+
+      {/* Root drop zone - drop here to move report out of folder */}
+      <div
+        className={`min-h-[24px] rounded transition-colors ${rootDragOver ? 'bg-blue-600/10 border border-dashed border-blue-500/40' : ''}`}
+        onDragOver={handleRootDragOver}
+        onDragLeave={handleRootDragLeave}
+        onDrop={handleRootDrop}
+      >
+        {rootDragOver && (
+          <p className="text-[10px] text-blue-400 text-center py-1">Drop to root</p>
+        )}
+      </div>
 
       {rootReports.map(report => (
         <div key={report.id} className="group relative">
-          <button
-            onClick={() => onSelectReport(report.id)}
-            onContextMenu={e => { e.preventDefault(); setRootReportMenu({ x: e.clientX, y: e.clientY, reportId: report.id }) }}
-            className={`w-full flex items-center gap-1.5 px-2 py-1 text-xs rounded truncate ${
-              activeReportId === report.id ? 'bg-blue-600/20 text-blue-400' : 'text-stone-400 hover:text-white hover:bg-stone-800'
-            }`}
-          >
-            <FileText className="w-3.5 h-3.5 flex-shrink-0" />
-            <span className="truncate flex-1">{report.ticker}</span>
-            <span
-              onClick={e => { e.stopPropagation(); setRootReportMenu({ x: e.clientX, y: e.clientY, reportId: report.id }) }}
-              className="hidden group-hover:block text-stone-500 hover:text-white flex-shrink-0 cursor-pointer"
-            >
-              <MoreHorizontal className="w-3.5 h-3.5" />
-            </span>
-          </button>
+          <DraggableReport
+            report={report}
+            activeReportId={activeReportId}
+            onSelectReport={onSelectReport}
+            onContextMenu={(e, id) => setRootReportMenu({ x: e.clientX, y: e.clientY, reportId: id })}
+          />
           {rootReportMenu?.reportId === report.id && (
             <ContextMenu x={rootReportMenu.x} y={rootReportMenu.y} items={buildRootReportMenu(report.id)} onClose={() => setRootReportMenu(null)} />
           )}
