@@ -20,6 +20,15 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   })
 }
 
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const body = await req.json()
+  const sb = getSupabase()
+  const { error } = await sb.from('reports').update({ folder_id: body.folder_id }).eq('id', id)
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ ok: true })
+}
+
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const sb = getSupabase()
