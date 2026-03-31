@@ -46,10 +46,10 @@ export default function ModernTemplate({ data, sectionUpdates }: TemplateProps) 
                 </p>
                 <p className="text-xs text-stone-500 mt-0.5">MCap {header.marketCap}</p>
               </div>
+            </div>
             {header.description && (
               <p className="text-sm text-stone-400 leading-relaxed mt-4">{header.description}</p>
             )}
-            </div>
           </div>
         )}
       </ReportSection>
